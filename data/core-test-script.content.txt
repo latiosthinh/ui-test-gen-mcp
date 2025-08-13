@@ -1,0 +1,19 @@
+import test, { expect } from "playwright/test";
+
+test.describe('test_description - Visual testing', () => {
+	test('PDP', async ({ page }) => {
+		const url = "test_url";
+
+		await page.goto(url);
+
+		for (const selector of [test_hide_selector]) {
+			await page.addStyleTag({
+				content: `${selector} { display: none !important; }`
+			});
+		}
+
+		const locator = page.locator("test_selector");
+		await locator.scrollIntoViewIfNeeded();
+		expect(await locator.screenshot()).toMatchSnapshot('test_description.replaceAll(/\s/i, '').png');
+	});
+});
