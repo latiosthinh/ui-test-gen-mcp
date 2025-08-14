@@ -91,10 +91,11 @@ server.tool(
 						
 						### Phase 4: Test Action Analysis & Generation
 						- Step 18: **CRITICAL** - Check the CSV data for "test_action" column - if it exists, you MUST:
-						  - **USE PLAYWRIGHT MCP**: Call the Playwright MCP to generate correct test_action code
-						  - The Playwright MCP will analyze the user's project code and generate proper test functions
-						  - This ensures the generated code follows the correct Playwright patterns and project style
-						  - The Playwright MCP will handle all the technical details of proper test action generation
+						  - **GENERATE PROPER TEST ACTIONS**: Create test_action functions that follow correct Playwright patterns
+						  - Analyze the user's project code to understand the existing coding style and patterns
+						  - Generate test functions that match the project's architecture and conventions
+						  - Ensure the generated code follows proper Playwright testing best practices
+						  - The system will automatically use the appropriate tools to generate correct test action code
 						- Step 19: **CRITICAL** - Each component in the CSV has its own test_hide selectors list, so be EXTREMELY careful when refactoring:
 						  - Do NOT combine or merge test_hide selectors between different components
 						  - Each component should maintain its specific hide selectors
@@ -135,7 +136,7 @@ server.tool(
 						- **REQUIREMENT 5**: **MUST check and edit playwright.config.ts to ensure snapshotDir is "./screenshots"**
 						- **REQUIREMENT 6**: **MUST create organized folder structure: ./utils/ui/ (utilities), ./data/ui/ (test data), ./pages/ui/ (page objects & locators)**
 						- **REQUIREMENT 7**: **MUST be extremely careful with test_hide selectors - each component has its own list**
-						- **REQUIREMENT 8**: **MUST analyze user's project code to copy coding style for test_action functions**
+						- **REQUIREMENT 8**: **MUST generate proper test_action functions following Playwright best practices and project coding style**
 						- **REQUIREMENT 9**: **MUST keep data files and page object classes separate from .spec.ts files**
 						
 						## 📝 CORE TEST SCRIPT TEMPLATE (MANDATORY):
@@ -160,7 +161,7 @@ server.tool(
 						8. **ALWAYS check playwright.config.ts for snapshotDir="./screenshots"**
 						9. **ALWAYS create organized folder structure: utils/ui/, data/ui/, pages/ui/**
 						10. **ALWAYS preserve component-specific test_hide selectors**
-						11. **ALWAYS use Playwright MCP for generating test_action functions**
+						11. **ALWAYS generate proper test_action functions following Playwright best practices**
 						12. **ALWAYS keep data files and page object classes separate from .spec.ts files**
 						
 						## 🚀 NEXT STEPS:
@@ -170,9 +171,31 @@ server.tool(
 						4. Replace template variables with CSV data
 						5. **REFACTOR the generated files for clean, readable code**
 						6. **During refactoring, extract utilities to appropriate grouped files in utils/ui/**
-						7. **Use Playwright MCP to generate test_action functions correctly**
+						7. **Generate proper test_action functions following Playwright best practices**
 						8. **Create data files in data/ui/ and page object classes in pages/ui/**
 						9. Test the files to ensure they work correctly
+					`
+				}
+			]
+		};
+	}
+);
+
+// Tool listing tool - shows all available tools with simple labels
+server.tool(
+	'list_tools',
+	'List all available tools only in this MCP server with simple labels for easy selection',
+	{},
+	async () => {
+		return {
+			content: [
+				{
+					type: "text",
+					text: `
+						## 🛠️ AVAILABLE TOOLS
+
+						- To generate Playwright UI tests: Use \`Tool 1\` or call \`create_playwright_visual_tests\`
+						- To see available tools: Use \`Tool 2\` or call \`list_tools\`
 					`
 				}
 			]
