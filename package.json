@@ -1,5 +1,5 @@
 {
-  "name": "snap-mcp",
+  "name": "ui-test-gen-mcp",
   "version": "1.0.0",
   "main": "main.ts",
   "type": "module",
