@@ -6,6 +6,32 @@ A Model Context Protocol (MCP) server that generates Playwright visual testing s
 
 This MCP server provides automated generation of Playwright visual testing scripts, helping developers quickly create comprehensive UI test suites from CSV test specifications. It includes automatic Playwright configuration validation, organized folder structure creation, and intelligent code generation following best practices.
 
+## 📦 Installation
+
+### Option 1: Install from npm (Recommended)
+
+```bash
+# Install globally for system-wide access
+npm install -g ui-test-gen-mcp
+
+# Or install locally in your project
+npm install ui-test-gen-mcp
+```
+
+### Option 2: Install from source
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd ui-test-gen-mcp
+
+# Install dependencies
+npm install
+
+# Build the TypeScript code
+npm run build
+```
+
 ## 🏗️ Project Structure
 
 ```
@@ -111,26 +137,50 @@ The server uses a mandatory core test script template that ensures consistency:
 3. Follow project's existing coding style
 4. Ensure proper separation of concerns
 
-## 🚀 Setup & Installation
+## 🚀 Setup & Usage
 
 ### Prerequisites
 - Node.js (v18 or higher)
 - npm or yarn
+- Playwright installed in your project
 
-### Installation
-```bash
-# Clone the repository
-git clone <repository-url>
-cd ui-test-gen-mcp
+### Quick Start
 
-# Install dependencies
-npm install
+1. **Install the package**:
+   ```bash
+   npm install ui-test-gen-mcp
+   ```
 
-# Build the TypeScript code
-npm run build
-```
+2. **Configure your MCP client** (e.g., Cursor, VS Code with MCP extension):
+   ```json
+   {
+     "mcpServers": {
+       "ui-test-gen-mcp": {
+         "command": "npx",
+         "args": ["-y", "ui-test-gen-mcp"]
+       }
+     }
+   }
+   ```
 
-### Development
+3. **Alternative configuration** (if using local installation):
+   ```json
+   {
+     "mcpServers": {
+       "ui-test-gen-mcp": {
+         "command": "node",
+         "args": ["./node_modules/ui-test-gen-mcp/dist/main.js"]
+       }
+     }
+   }
+   ```
+
+4. **Restart your MCP client** to load the new server
+
+### Development Setup
+
+If you're developing or want to run from source:
+
 ```bash
 # Start development mode with auto-reload
 npm run dev
@@ -142,16 +192,41 @@ npm run build
 npm start
 ```
 
-## 🔌 MCP Configuration
+## 🔌 MCP Configuration Examples
 
-To use this MCP server, add it to your MCP client configuration:
-
+### For Cursor IDE
+Add to your Cursor settings:
 ```json
 {
   "mcpServers": {
     "ui-test-gen-mcp": {
-      "command": "node",
-      "args": ["/path/to/ui-test-gen-mcp/dist/main.js"]
+      "command": "npx",
+      "args": ["-y", "ui-test-gen-mcp"]
+    }
+  }
+}
+```
+
+### For VS Code with MCP Extension
+Add to your VS Code settings:
+```json
+{
+  "mcp.servers": {
+    "ui-test-gen-mcp": {
+      "command": "npx",
+      "args": ["ui-test-gen-mcp"]
+    }
+  }
+}
+```
+
+### For Other MCP Clients
+```json
+{
+  "mcpServers": {
+    "ui-test-gen-mcp": {
+      "command": "npx",
+      "args": ["-y", "ui-test-gen-mcp"]
     }
   }
 }
@@ -161,6 +236,13 @@ To use this MCP server, add it to your MCP client configuration:
 
 Test the MCP connection:
 ```bash
+# If installed globally
+ui-test-gen-mcp
+
+# If installed locally
+npx ui-test-gen-mcp
+
+# If running from source
 node test-connection.js
 ```
 
@@ -171,6 +253,33 @@ file_name,test_url,test_description,test_selector,test_hide,test_action
 homepage,https://example.com,Homepage hero section,.hero-section,.ad-banner,click
 product,https://example.com/product,Product image,.product-image,.cookie-banner,screenshot
 ```
+
+## 💡 Usage Examples
+
+### Basic Usage
+Once configured, you can use the MCP server to:
+
+1. **Generate tests from CSV data**:
+   - Call `create_playwright_visual_tests` with your CSV content
+   - The server will automatically create test files and folder structure
+
+2. **List available tools**:
+   - Call `list_tools` to see what's available
+
+### Example CSV Input
+```csv
+file_name,test_url,test_description,test_selector,test_hide,test_action
+landing,https://myapp.com,Landing page header,.header-section,.notification-banner,screenshot
+dashboard,https://myapp.com/dashboard,Dashboard sidebar,.sidebar-nav,.ads-container,click
+```
+
+### Generated Output
+The server will create:
+- `./tests/ui/landing.spec.ts` - Test file for landing page
+- `./tests/ui/dashboard.spec.ts` - Test file for dashboard
+- `./utils/ui/` - Organized utility files
+- `./data/ui/` - Test data files
+- `./pages/ui/` - Page object classes
 
 ## ⚠️ Important Notes
 
@@ -197,26 +306,29 @@ product,https://example.com/product,Product image,.product-image,.cookie-banner,
 - **Automatic Configuration**: Playwright config validation and updates
 - **Maintainable Code**: Clean, organized, and well-structured test files
 - **Project Integration**: Follows existing project coding styles and conventions
+- **Easy Installation**: Available as npm package for quick setup
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
-1. **MCP Connection Failed**: Ensure the server is built and running
+1. **MCP Connection Failed**: Ensure the server is installed and configured correctly
 2. **Template Errors**: Verify CSV data follows required format
 3. **Configuration Issues**: Check that `playwright.config.ts` exists and is editable
 4. **Folder Creation Errors**: Ensure write permissions in the project directory
 
 ### Debug Steps
-1. Run `node test-connection.js` to verify MCP server
-2. Check console logs for error messages
-3. Verify CSV data format and content
-4. Ensure project structure is properly set up
+1. Verify installation: `npm list ui-test-gen-mcp`
+2. Test MCP connection: `npx ui-test-gen-mcp`
+3. Check console logs for error messages
+4. Verify CSV data format and content
+5. Ensure project structure is properly set up
 
 ## 📚 Additional Resources
 
 - [Model Context Protocol Documentation](https://modelcontextprotocol.io/)
 - [Playwright Testing Framework](https://playwright.dev/)
 - [TypeScript Documentation](https://www.typescriptlang.org/)
+- [npm Package Page](https://www.npmjs.com/package/ui-test-gen-mcp)
 
 ## 🤝 Contributing
 
@@ -232,3 +344,5 @@ ISC License - see package.json for details
 ---
 
 **Note**: This MCP server is designed for generating Playwright visual testing scripts. Ensure you have Playwright properly configured in your project before using the generated tests.
+
+**Package**: Available on [npm](https://www.npmjs.com/package/ui-test-gen-mcp) as `ui-test-gen-mcp`
