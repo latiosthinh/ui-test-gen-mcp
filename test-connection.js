@@ -5,7 +5,7 @@ async function testMCPConnection() {
     console.log('Testing MCP Server Connection...');
     
     // Test with absolute path
-    const mcpProcess = spawn('node', ['C:/Projects/AI/cursor-planning-agent/snap-mcp/dist/main.js'], {
+    const mcpProcess = spawn('node', ['C:/Projects/AI/cursor-planning-agent/ui-test-gen-mcp/dist/main.js'], {
         stdio: ['pipe', 'pipe', 'pipe'],
         cwd: process.cwd() // Use current working directory
     });

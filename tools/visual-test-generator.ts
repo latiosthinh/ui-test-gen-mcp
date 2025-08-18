@@ -1,25 +1,5 @@
 import { z } from "zod";
-
-// Core test script template - EMBEDDED for universal access
-const CORE_TEST_SCRIPT_TEMPLATE = `import test, { expect } from "playwright/test";
-
-test.describe('test_description - Visual testing', () => {
-	test('PDP', async ({ page }) => {
-		const url = "test_url";
-
-		await page.goto(url);
-
-		for (const selector of [test_hide_selector]) {
-			await page.addStyleTag({
-				content: \`\${selector} { display: none !important; }\`
-			});
-		}
-
-		const locator = page.locator("test_selector");
-		await locator.scrollIntoViewIfNeeded();
-		expect(await locator.screenshot()).toMatchSnapshot('test_description.replaceAll(/\\s/i, '').png');
-	});
-});`;
+import { ACTION_TEMPLATE, CORE_TEST_TEMPLATE_FOOTER, CORE_TEST_TEMPLATE_HEADER, HIDE_SELECTOR_TEMPLATE, MODULE_IMPORT_TEMPLATE } from "../helper/template.js";
 
 export const visualTestGeneratorTool = {
 	name: 'create_playwright_visual_tests',
@@ -27,7 +7,42 @@ export const visualTestGeneratorTool = {
 	schema: z.object({
 		csvData: z.string().describe("CSV file content or data containing test information (file_name, test_url, test_description, test_selector, test_hide, test_action columns)")
 	}),
-	handler: async ({ csvData }: { csvData: string }, extra?: any) => {
+	handler: async (args: any, extra?: any) => {
+		// Extract csvData from arguments
+		const { csvData } = args;
+
+		if (!csvData) {
+			throw new Error('csvData parameter is required');
+		}
+
+		// Parse CSV data to determine which templates to include
+		const csvLines = csvData.trim().split('\n');
+		const headers = csvLines[0]?.split(',').map((h: string) => h.trim()) || [];
+
+		// Check if test_hide and test_action columns exist and have values
+		const hasHideSelectors = csvLines.slice(1).some((line: string) => {
+			const values = line.split(',').map((v: string) => v.trim());
+			const hideIndex = headers.indexOf('test_hide');
+			return hideIndex >= 0 && values[hideIndex] && values[hideIndex] !== '';
+		});
+
+		const hasTestActions = csvLines.slice(1).some((line: string) => {
+			const values = line.split(',').map((v: string) => v.trim());
+			const actionIndex = headers.indexOf('test_action');
+			return actionIndex >= 0 && values[actionIndex] && values[actionIndex] !== '';
+		});
+
+		// Build conditional template
+		let conditionalTemplate = '';
+
+		if (hasHideSelectors) {
+			conditionalTemplate += HIDE_SELECTOR_TEMPLATE;
+		}
+
+		if (hasTestActions) {
+			conditionalTemplate += ACTION_TEMPLATE;
+		}
+
 		return {
 			content: [
 				{
@@ -57,7 +72,7 @@ export const visualTestGeneratorTool = {
 						### Phase 2: File Creation
 						- Step 5: In the CSV data, find the row that contains file_name to name the generated files
 						- Step 6: All the generated test files should be created in ./tests/ui folder 
-						- Step 7: Follow other rows in CSV data - and remember to exclude the "test_action" column (if any, for example: test_description, test_selector, test_hide, etc.) to generate the test file
+						- Step 7: Follow other rows in CSV data to generate the test file
 						- Step 8: The test file should be named as the file_name in the CSV data
 						- Step 9: After generating the empty test files, fill all the files with default content (use the core-test-script template below as a reference)
 						
@@ -81,19 +96,13 @@ export const visualTestGeneratorTool = {
 						  - ./pages/ui/ - For page object classes, locators, and element interactions
 						  - ./utils/ui/ - For utility functions and helpers (as defined above)
 						
-						### Phase 4: Test Action Analysis & Generation
-						- Step 18: **CRITICAL** - Check the CSV data for "test_action" column - if it exists, you MUST:
-						  - **GENERATE PROPER TEST ACTIONS**: Create test_action functions that follow correct Playwright patterns
-						  - Analyze the user's project code to understand the existing coding style and patterns
-						  - Generate test functions that match the project's architecture and conventions
-						  - Ensure the generated code follows proper Playwright testing best practices
-						  - The system will automatically use the appropriate tools to generate correct test action code
-						- Step 19: **CRITICAL** - Each component in the CSV has its own test_hide selectors list, so be EXTREMELY careful when refactoring:
+						### Phase 4: Generation
+						- Step 18: **CRITICAL** - Each component in the CSV has its own test_hide selectors list, so be EXTREMELY careful when refactoring:
 						  - Do NOT combine or merge test_hide selectors between different components
 						  - Each component should maintain its specific hide selectors
 						  - The hide selectors are component-specific and should not be shared
-						- Step 20: After finding the code, replace the action in the test file with the found code
-						- Step 21: Run the test file to check if the test is working
+						- Step 19: After finding the code, replace the action in the test file with the found code
+						- Step 20: Run the test file to check if the test is working
 						** IMPORTANT: Do not overwrite the existing test files **
 						
 						### Phase 5: File Refactoring (CRITICAL)
@@ -128,12 +137,14 @@ export const visualTestGeneratorTool = {
 						- **REQUIREMENT 5**: **MUST check and edit playwright.config.ts to ensure snapshotDir is "./screenshots"**
 						- **REQUIREMENT 6**: **MUST create organized folder structure: ./utils/ui/ (utilities), ./data/ui/ (test data), ./pages/ui/ (page objects & locators)**
 						- **REQUIREMENT 7**: **MUST be extremely careful with test_hide selectors - each component has its own list**
-						- **REQUIREMENT 8**: **MUST generate proper test_action functions following Playwright best practices and project coding style**
-						- **REQUIREMENT 9**: **MUST keep data files and page object classes separate from .spec.ts files**
+						- **REQUIREMENT 8**: **MUST keep data files and page object classes separate from .spec.ts files**
 						
 						## 📝 CORE TEST SCRIPT TEMPLATE (MANDATORY):
 						\`\`\`typescript
-						${CORE_TEST_SCRIPT_TEMPLATE}
+						${MODULE_IMPORT_TEMPLATE}
+						${CORE_TEST_TEMPLATE_HEADER}
+						${conditionalTemplate}
+						${CORE_TEST_TEMPLATE_FOOTER}
 						\`\`\`
 						
 						## 🔄 TEMPLATE VARIABLES TO REPLACE:
@@ -153,8 +164,7 @@ export const visualTestGeneratorTool = {
 						8. **ALWAYS check playwright.config.ts for snapshotDir="./screenshots"**
 						9. **ALWAYS create organized folder structure: utils/ui/, data/ui/, pages/ui/**
 						10. **ALWAYS preserve component-specific test_hide selectors**
-						11. **ALWAYS generate proper test_action functions following Playwright best practices**
-						12. **ALWAYS keep data files and page object classes separate from .spec.ts files**
+						11. **ALWAYS keep data files and page object classes separate from .spec.ts files**
 						
 						## 🚀 NEXT STEPS:
 						1. **Check and edit playwright.config.ts for snapshotDir**
@@ -163,9 +173,8 @@ export const visualTestGeneratorTool = {
 						4. Replace template variables with CSV data
 						5. **REFACTOR the generated files for clean, readable code**
 						6. **During refactoring, extract utilities to appropriate grouped files in utils/ui/**
-						7. **Generate proper test_action functions following Playwright best practices**
-						8. **Create data files in data/ui/ and page object classes in pages/ui/**
-						9. Test the files to ensure they work correctly
+						7. **Create data files in data/ui/ and page object classes in pages/ui/**
+						8. Test the files to ensure they work correctly
 					`
 				}
 			]

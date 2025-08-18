@@ -15,10 +15,14 @@ export const registerTool = ({
 	server: McpServer;
 	tool: ITool;
 }) => {
+	// Convert Zod schema to JSON schema for MCP
+	const jsonSchema = tool.schema ? tool.schema.shape : {};
+
+	// Use the correct MCP tool registration format
 	server.tool(
 		tool.name,
 		tool.description,
-		tool.schema?.shape ?? {},
+		jsonSchema,
 		async (args, extra) => tool.handler(args, extra)
 	);
 };
