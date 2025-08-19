@@ -56,7 +56,7 @@ export const SINGLE_TEST_WITH_ENV_TEMPLATE = `
 test.describe('test_description - Visual testing', () => {
 	test('Visual Test', {
 		tag: test_tags
-	}, async ({ page }) => {
+	}, async ({ page, context }) => {
 		const testData = pdpTestData.find(t => t.test_description === 'test_description' && t.test_env === getCurrentEnv());
 		if (!testData) throw new Error('Test data not found');
 
@@ -71,6 +71,12 @@ test.describe('test_description - Visual testing', () => {
 		
 		// Execute test action if specified
 		test_action_code
+		
+		// Use BaseUiPage for fullPageTags tests
+		if (test_tags.includes('@visual-fullpage')) {
+			const baseUiPage = new BaseUiPage(page, context);
+			await baseUiPage.loadAllElements();
+		}
 		
 		const locator = page.locator("test_selector");
 		await locator.scrollIntoViewIfNeeded();
@@ -132,3 +138,34 @@ test.describe(\`\${test_description} - \${currentEnv.toUpperCase()} Environment\
 	});
 });
 `;
+
+// Base UI Page template for fullPageTags tests
+export const BASE_UI_PAGE_TEMPLATE = `import { BrowserContext, Page } from "@playwright/test";
+
+export class BaseUiPage {
+	readonly page: Page;
+	readonly context: BrowserContext;
+
+	constructor(page: Page, context: BrowserContext) {
+		this.page = page;
+		this.context = context;
+	}
+
+	async loadAllElements(): Promise<void> {
+		await this.page.evaluate(() => {
+			window.scrollTo({
+				top: document.body.scrollHeight,
+				behavior: 'smooth'
+			});
+		});
+
+		await this.page.waitForTimeout(2000);
+		await this.page.evaluate(() => {
+			window.scrollTo({
+				top: 0,
+				behavior: 'smooth'
+			});
+		});
+		await this.page.waitForTimeout(2000);
+	}
+}`;

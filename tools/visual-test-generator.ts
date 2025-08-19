@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ACTION_TEMPLATE, CORE_TEST_TEMPLATE_FOOTER, CORE_TEST_TEMPLATE_HEADER, HIDE_SELECTOR_TEMPLATE, MODULE_IMPORT_TEMPLATE, ENV_CONFIG_TEMPLATE, SINGLE_TEST_WITH_ENV_TEMPLATE, TEST_TAGS_IMPORT } from "../helper/template.js";
+import { ACTION_TEMPLATE, CORE_TEST_TEMPLATE_FOOTER, CORE_TEST_TEMPLATE_HEADER, HIDE_SELECTOR_TEMPLATE, MODULE_IMPORT_TEMPLATE, ENV_CONFIG_TEMPLATE, SINGLE_TEST_WITH_ENV_TEMPLATE, TEST_TAGS_IMPORT, BASE_UI_PAGE_TEMPLATE } from "../helper/template.js";
 
 export const visualTestGeneratorTool = {
 	name: 'create_playwright_visual_tests',
@@ -115,7 +115,19 @@ export const visualTestGeneratorTool = {
 				}
 			}
 
-			envTemplate = TEST_TAGS_IMPORT + envConfigWithData + tagReplacedTemplate;
+			// Add BaseUiPage import for fullPageTags tests
+			const hasFullPageTests = csvLines.slice(1).some((line: string) => {
+				const values = line.split(',').map((v: string) => v.trim());
+				const selectorIndex = headers.indexOf('test_selector');
+				return selectorIndex >= 0 && values[selectorIndex] === 'body';
+			});
+
+			if (hasFullPageTests) {
+				envTemplate = 'import { BaseUiPage } from "./base-ui-page";\n\n' + TEST_TAGS_IMPORT + envConfigWithData + tagReplacedTemplate;
+			} else {
+				envTemplate = TEST_TAGS_IMPORT + envConfigWithData + tagReplacedTemplate;
+			}
+
 			console.log('DEBUG: envTemplate length:', envTemplate.length);
 			console.log('DEBUG: envTemplate preview:', envTemplate.substring(0, 200));
 		}
@@ -170,25 +182,28 @@ export const visualTestGeneratorTool = {
 						- Step 16: **CRITICAL** - Create ./data/ui/ folder for test data organization
 						- Step 17: **CRITICAL** - Create ./pages/ui/ folder for locators and generated classes that serve test functions
 						- Step 18: **CRITICAL** - Data files and page object classes should NOT be included in .spec.ts files
-						- Step 19: The folder structure should contain:
+						- Step 19: **NEW REQUIREMENT** - Create ./tests/ui/base-ui-page.ts with BaseUiPage class for fullPageTags tests
+						- Step 20: The folder structure should contain:
 						  - ./data/ui/ - For test data, constants, and configuration
 						  - ./pages/ui/ - For page object classes, locators, and element interactions
 						  - ./utils/ui/ - For utility functions and helpers (as defined above)
+						  - ./tests/ui/base-ui-page.ts - **NEW** Base UI Page class for fullPageTags tests
 						
 						### Phase 5: Generation
-						- Step 20: **CRITICAL** - Each component in the CSV has its own test_hide selectors list, so be EXTREMELY careful when refactoring:
+						- Step 21: **CRITICAL** - Each component in the CSV has its own test_hide selectors list, so be EXTREMELY careful when refactoring:
 						  - Do NOT combine or merge test_hide selectors between different components
 						  - Each component should maintain its specific hide selectors
 						  - The hide selectors are component-specific and should not be shared
-						- Step 21: **NEW REQUIREMENT** - Apply test tags using proper Playwright syntax:
+						- Step 22: **NEW REQUIREMENT** - Apply test tags using proper Playwright syntax:
 						  - All visual tests get tags: ['@visual-regression', '@screenshot']
 						  - Selector "body" gets additional tag: '@visual-fullpage'
 						  - Other selectors get additional tag: '@visual-section'
-						  - Use proper syntax: test('Test Name', { tag: test_tags }, async ({ page }) => {})
-						- Step 22: **NEW REQUIREMENT** - Tags are pre-calculated constants, do NOT use any functions to generate tags
-						- Step 23: **NEW REQUIREMENT** - Environment config should be dynamically generated from CSV data, NOT hardcoded
-						- Step 24: After finding the code, replace the action in the test file with the found code
-						- Step 25: Run the test file to check if the test is working
+						  - Use proper syntax: test('Test Name', { tag: test_tags }, async ({ page, context }) => {})
+						- Step 23: **NEW REQUIREMENT** - Tags are pre-calculated constants, do NOT use any functions to generate tags
+						- Step 24: **NEW REQUIREMENT** - Environment config should be dynamically generated from CSV data, NOT hardcoded
+						- Step 25: **NEW REQUIREMENT** - For fullPageTags tests (selector "body"), use BaseUiPage.loadAllElements() method
+						- Step 26: After finding the code, replace the action in the test file with the found code
+						- Step 27: Run the test file to check if the test is working
 						** IMPORTANT: Do not overwrite the existing test files **
 						
 						### Phase 6: File Refactoring (CRITICAL)
@@ -280,13 +295,15 @@ export const visualTestGeneratorTool = {
 						- **REQUIREMENT 8**: **MUST keep data files and page object classes separate from .spec.ts files**
 						- **REQUIREMENT 9**: **NEW - MUST create ONE test file per file_name**
 						- **REQUIREMENT 10**: **NEW - MUST support ANY environment name (not just prep/int)**
-						- **REQUIREMENT 11**: **NEW - MUST implement test tags using proper Playwright syntax: test('Name', { tag: test_tags }, async ({ page }) => {})**
+						- **REQUIREMENT 11**: **NEW - MUST implement test tags using proper Playwright syntax: test('Name', { tag: test_tags }, async ({ page, context }) => {})**
 						- **REQUIREMENT 12**: **NEW - MUST fix screenshot paths to use simple structure: /__screenshots__{/testFileName}{/projectName}{/arg}{ext} (at root level)**
 						- **REQUIREMENT 13**: **NEW - Tags are pre-calculated constants, do NOT use getTestTags function and do NOT duplicate tag constants in test files**
 						- **REQUIREMENT 14**: **NEW - MUST create external test data files, do NOT duplicate data in test files**
 						- **REQUIREMENT 15**: **NEW - MUST generate environment config dynamically from CSV data, NOT hardcode it**
 						- **REQUIREMENT 16**: **NEW - MUST implement test.beforeEach and test.afterEach hooks to make test blocks extremely short**
 						- **REQUIREMENT 17**: **NEW - Test blocks should contain only test description and test action code, all setup/teardown in hooks**
+						- **REQUIREMENT 18**: **NEW - MUST create ./tests/ui/base-ui-page.ts with BaseUiPage class for fullPageTags tests**
+						- **REQUIREMENT 19**: **NEW - MUST use BaseUiPage.loadAllElements() method for fullPageTags tests (selector "body")**
 						
 						## 📝 CORE TEST SCRIPT TEMPLATE (MANDATORY):
 						
@@ -300,6 +317,14 @@ export const visualTestGeneratorTool = {
 						${CORE_TEST_TEMPLATE_FOOTER}
 						\`\`\`
 						`}
+						
+						## 📄 BASE UI PAGE TEMPLATE (MANDATORY FOR FULLPAGE TESTS):
+						
+						**CRITICAL**: Create ./tests/ui/base-ui-page.ts with the following content:
+						
+						\`\`\`typescript
+						${BASE_UI_PAGE_TEMPLATE}
+						\`\`\`
 						
 						## 🔄 TEMPLATE VARIABLES TO REPLACE:
 						- \`test_description\` → Replace with the actual test description from CSV
@@ -324,31 +349,35 @@ export const visualTestGeneratorTool = {
 						11. **ALWAYS keep data files and page object classes separate from .spec.ts files**
 						12. **NEW - ALWAYS create ONE test file per file_name**
 						13. **NEW - ALWAYS support any environment name (not just prep/int)**
-						14. **NEW - ALWAYS implement test tags using proper Playwright syntax: test('Name', { tag: test_tags }, async ({ page }) => {})**
+						14. **NEW - ALWAYS implement test tags using proper Playwright syntax: test('Name', { tag: test_tags }, async ({ page, context }) => {})**
 						15. **NEW - ALWAYS use simple screenshot path structure: __screenshots__/{currentEnv}/{screenShotName}.png (at root level)**
 						16. **NEW - ALWAYS use pre-calculated tag constants, do NOT duplicate tag constants in test files**
 						17. **NEW - ALWAYS create external test data files, do NOT duplicate data in test files**
 						18. **NEW - ALWAYS generate environment config dynamically from CSV data, NOT hardcode it**
 						19. **NEW - ALWAYS implement test.beforeEach and test.afterEach hooks to make test blocks extremely short**
 						20. **NEW - ALWAYS keep test blocks minimal - only description and action code**
+						21. **NEW - ALWAYS create ./tests/ui/base-ui-page.ts with BaseUiPage class for fullPageTags tests**
+						22. **NEW - ALWAYS use BaseUiPage.loadAllElements() method for fullPageTags tests (selector "body")**
 						
 						## 🚀 NEXT STEPS:
 						1. **Check and edit playwright.config.ts for snapshotPathTemplate="'./__screenshots__{/testFileName}{/projectName}{/arg}{ext}"**
 						2. **Create organized folder structure: utils/ui/, data/ui/, pages/ui/**
-						3. **NEW - Create ONE test file per file_name**
-						4. **NEW - Support any environment name dynamically**
-						5. Create the test files following the appropriate template (standard or single file)
-						6. **NEW - Implement test tags using proper Playwright syntax: test('Name', { tag: test_tags }, async ({ page }) => {})**
-						7. **NEW - Fix screenshot paths to use simple structure: __screenshots__/{currentEnv}/{screenShotName}.png (at root level)**
-						8. **NEW - Implement test.beforeEach and test.afterEach hooks to make test blocks extremely short**
-						9. **NEW - Use pre-calculated tag constants**
-						10. **NEW - Create external test data files**
-						11. **NEW - Generate environment config dynamically from CSV data**
-						12. Replace template variables with CSV data
-						13. **REFACTOR the generated files for clean, readable code**
-						14. **During refactoring, extract utilities to appropriate grouped files in utils/ui/**
-						15. **Create data files in data/ui/ and page object classes in pages/ui/**
-						16. Test the files to ensure they work correctly
+						3. **NEW - Create ./tests/ui/base-ui-page.ts with BaseUiPage class for fullPageTags tests**
+						4. **NEW - Create ONE test file per file_name**
+						5. **NEW - Support any environment name dynamically**
+						6. Create the test files following the appropriate template (standard or single file)
+						7. **NEW - Implement test tags using proper Playwright syntax: test('Name', { tag: test_tags }, async ({ page, context }) => {})**
+						8. **NEW - Fix screenshot paths to use simple structure: __screenshots__/{currentEnv}/{screenShotName}.png (at root level)**
+						9. **NEW - Implement test.beforeEach and test.afterEach hooks to make test blocks extremely short**
+						10. **NEW - Use pre-calculated tag constants**
+						11. **NEW - Create external test data files**
+						12. **NEW - Generate environment config dynamically from CSV data**
+						13. **NEW - For fullPageTags tests, use BaseUiPage.loadAllElements() method**
+						14. Replace template variables with CSV data
+						15. **REFACTOR the generated files for clean, readable code**
+						16. **During refactoring, extract utilities to appropriate grouped files in utils/ui/**
+						17. **Create data files in data/ui/ and page object classes in pages/ui/**
+						18. Test the files to ensure they work correctly
 						
 						## 🔧 Environment Switching Usage:
 						
@@ -376,7 +405,7 @@ export const visualTestGeneratorTool = {
 							let currentTestData: any;
 							let currentLocator: any;
 							
-							test.beforeEach(async ({ page }) => {
+							test.beforeEach(async ({ page, context }) => {
 								// Get test data for current test
 								currentTestData = getTestData(testDescription, getCurrentEnv());
 								if (!currentTestData) throw new Error('Test data not found');
@@ -392,10 +421,16 @@ export const visualTestGeneratorTool = {
 								await executeTestAction(page, currentTestData.test_action);
 							});
 							
-							test.afterEach(async ({ page }) => {
+							test.afterEach(async ({ page, context }) => {
 								// Get locator and scroll to element
 								currentLocator = page.locator(currentTestData.test_selector);
 								await currentLocator.scrollIntoViewIfNeeded();
+								
+								// Use BaseUiPage for fullPageTags tests
+								if (currentTestData.test_tags.includes('@visual-fullpage')) {
+									const baseUiPage = new BaseUiPage(page, context);
+									await baseUiPage.loadAllElements();
+								}
 								
 								// Take screenshot
 								const screenShotName = generateScreenshotName(currentTestData.test_description);
@@ -403,12 +438,12 @@ export const visualTestGeneratorTool = {
 							});
 							
 							// EXTREMELY SHORT test blocks - only description and action code
-							test('Test Description 1', { tag: test_tags }, async ({ page }) => {
+							test('Test Description 1', { tag: test_tags }, async ({ page, context }) => {
 								// Test block should be empty or contain only custom logic
 								// All setup and teardown is handled by beforeEach/afterEach
 							});
 							
-							test('Test Description 2', { tag: test_tags }, async ({ page }) => {
+							test('Test Description 2', { tag: test_tags }, async ({ page, context }) => {
 								// Only custom test action code here, if any
 							});
 						});
@@ -427,6 +462,10 @@ export const visualTestGeneratorTool = {
 						./data/ui/
 						├── test-data.ts          # Test data structure and functions
 						└── [other data files]    # Additional test data
+
+						./pages/ui/
+						├── base-ui-page.ts       # Base UI Page class for fullPageTags tests
+						└── [other page object files]-ui.ts    # Additional page object files
 						
 						./tests/ui/
 						└── [test files].spec.ts  # Test files that import from utils and data
