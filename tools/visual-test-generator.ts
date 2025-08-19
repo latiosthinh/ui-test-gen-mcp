@@ -198,6 +198,10 @@ export const visualTestGeneratorTool = {
 						- **NEW REQUIREMENT**: Create ONE test file per file_name, NOT separate files per environment
 						- **NEW REQUIREMENT**: Users can change currentEnv variable to switch environments
 						- **NEW REQUIREMENT**: Screenshots automatically save to correct environment folder
+						- **NEW REQUIREMENT**: All the steps of gettingTestData, gotoDataUrl, hideElements should be contained in test.beforeEach hook
+						- **NEW REQUIREMENT**: All the steps of getting locator, scroll to locator, take screenshot should be contained in test.afterEach hook
+						- **NEW REQUIREMENT**: Simplify the test block so the test blocks is only different from each other by the test_description, and the test_action_code (because the test_action_code should be manually written/modified by the user)
+						- **NEW REQUIREMENT**: Test blocks should be extremely short, containing only the test description and test action code
 						
 						#### 6.2 Test Tags Implementation with Proper Playwright Syntax
 						- **NEW REQUIREMENT**: Tags are pre-calculated constants, do NOT use any functions to generate tags
@@ -281,6 +285,8 @@ export const visualTestGeneratorTool = {
 						- **REQUIREMENT 13**: **NEW - Tags are pre-calculated constants, do NOT use getTestTags function and do NOT duplicate tag constants in test files**
 						- **REQUIREMENT 14**: **NEW - MUST create external test data files, do NOT duplicate data in test files**
 						- **REQUIREMENT 15**: **NEW - MUST generate environment config dynamically from CSV data, NOT hardcode it**
+						- **REQUIREMENT 16**: **NEW - MUST implement test.beforeEach and test.afterEach hooks to make test blocks extremely short**
+						- **REQUIREMENT 17**: **NEW - Test blocks should contain only test description and test action code, all setup/teardown in hooks**
 						
 						## 📝 CORE TEST SCRIPT TEMPLATE (MANDATORY):
 						
@@ -323,6 +329,8 @@ export const visualTestGeneratorTool = {
 						16. **NEW - ALWAYS use pre-calculated tag constants, do NOT duplicate tag constants in test files**
 						17. **NEW - ALWAYS create external test data files, do NOT duplicate data in test files**
 						18. **NEW - ALWAYS generate environment config dynamically from CSV data, NOT hardcode it**
+						19. **NEW - ALWAYS implement test.beforeEach and test.afterEach hooks to make test blocks extremely short**
+						20. **NEW - ALWAYS keep test blocks minimal - only description and action code**
 						
 						## 🚀 NEXT STEPS:
 						1. **Check and edit playwright.config.ts for snapshotPathTemplate="'./__screenshots__{/testFileName}{/projectName}{/arg}{ext}"**
@@ -332,6 +340,7 @@ export const visualTestGeneratorTool = {
 						5. Create the test files following the appropriate template (standard or single file)
 						6. **NEW - Implement test tags using proper Playwright syntax: test('Name', { tag: test_tags }, async ({ page }) => {})**
 						7. **NEW - Fix screenshot paths to use simple structure: __screenshots__/{currentEnv}/{screenShotName}.png (at root level)**
+						8. **NEW - Implement test.beforeEach and test.afterEach hooks to make test blocks extremely short**
 						9. **NEW - Use pre-calculated tag constants**
 						10. **NEW - Create external test data files**
 						11. **NEW - Generate environment config dynamically from CSV data**
@@ -357,6 +366,55 @@ export const visualTestGeneratorTool = {
 						- Use the correct base URL for the selected environment
 						- Save screenshots to the correct environment folder
 						- Apply environment-specific configurations
+						
+						## 🎯 Test Block Structure with beforeEach/afterEach Hooks:
+						
+						**CRITICAL**: The test blocks should be extremely short and clean:
+						
+						\`\`\`typescript
+						test.describe('Visual Testing', () => {
+							let currentTestData: any;
+							let currentLocator: any;
+							
+							test.beforeEach(async ({ page }) => {
+								// Get test data for current test
+								currentTestData = getTestData(testDescription, getCurrentEnv());
+								if (!currentTestData) throw new Error('Test data not found');
+								
+								// Navigate to page
+								await page.goto(currentTestData.test_url);
+								
+								// Hide elements
+								const hideSelectors = currentTestData.test_hide.split(',').map(s => s.trim()).filter(s => s);
+								await hideElements(page, hideSelectors);
+								
+								// Execute test action
+								await executeTestAction(page, currentTestData.test_action);
+							});
+							
+							test.afterEach(async ({ page }) => {
+								// Get locator and scroll to element
+								currentLocator = page.locator(currentTestData.test_selector);
+								await currentLocator.scrollIntoViewIfNeeded();
+								
+								// Take screenshot
+								const screenShotName = generateScreenshotName(currentTestData.test_description);
+								expect(await currentLocator.screenshot()).toMatchSnapshot([getCurrentEnv(), \`\${screenShotName}.png\`]);
+							});
+							
+							// EXTREMELY SHORT test blocks - only description and action code
+							test('Test Description 1', { tag: test_tags }, async ({ page }) => {
+								// Test block should be empty or contain only custom logic
+								// All setup and teardown is handled by beforeEach/afterEach
+							});
+							
+							test('Test Description 2', { tag: test_tags }, async ({ page }) => {
+								// Only custom test action code here, if any
+							});
+						});
+						\`\`\`
+						
+						**RESULT**: Test blocks become extremely short and clean, containing only the test description and any custom test action code!
 						
 						## 📁 External File Structure:
 						
