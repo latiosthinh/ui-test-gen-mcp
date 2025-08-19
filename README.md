@@ -1,10 +1,10 @@
 # UI Test Gen MCP Server
 
-A Model Context Protocol (MCP) server that generates Playwright visual testing scripts from CSV data with advanced configuration management and organized code structure.
+A Model Context Protocol (MCP) server that generates Playwright visual testing scripts from CSV data with advanced configuration management, environment switching capabilities, and organized code structure.
 
 ## 🚀 Overview
 
-This MCP server provides automated generation of Playwright visual testing scripts, helping developers quickly create comprehensive UI test suites from CSV test specifications. It includes automatic Playwright configuration validation, organized folder structure creation, and intelligent code generation following best practices.
+This MCP server provides automated generation of Playwright visual testing scripts, helping developers quickly create comprehensive UI test suites from CSV test specifications. It includes automatic Playwright configuration validation, organized folder structure creation, intelligent code generation following best practices, and **environment switching capabilities** for multi-environment testing.
 
 ## 📦 Installation
 
@@ -43,6 +43,10 @@ ui-test-gen-mcp/
 │   └── tool-lister.ts     # Tool listing utility
 ├── helper/
 │   ├── index.ts           # Helper function exports
+│   ├── template.ts        # Test templates and tag definitions
+│   ├── test-tags.ts       # Tag utility functions
+│   ├── env-config.ts      # Environment configuration helpers
+│   ├── test-data.ts       # Test data management
 │   └── register.ts        # Tool registration helper
 ├── data/
 │   ├── core-test-script.content.txt  # Test script template
@@ -59,8 +63,10 @@ ui-test-gen-mcp/
 - **Automatic Playwright Config Validation**: Checks and updates `playwright.config.ts` for proper `snapshotDir` configuration
 - **Organized Folder Structure**: Creates `./tests/ui/`, `./utils/ui/`, `./data/ui/`, and `./pages/ui/` directories
 - **CSV-Based Test Generation**: Processes CSV data to create test files following a strict template
+- **Environment Switching**: **NEW** - Single test file handles multiple environments (prep, int, qa, prod, etc.)
 - **Smart Code Organization**: Extracts utilities and organizes code during refactoring phase
 - **Project Style Integration**: Analyzes existing code to match project's coding conventions
+- **Improved Tag System**: **NEW** - Pre-calculated tag constants instead of function calls
 
 **Input Schema**:
 ```typescript
@@ -76,6 +82,7 @@ ui-test-gen-mcp/
 - `test_selector`: CSS selector for the element
 - `test_hide`: Elements to hide during testing (component-specific)
 - `test_action`: Action to perform (optional)
+- `test_env`: **NEW** - Environment name (prep, int, qa, prod, staging, etc.)
 
 ### 2. Tool Lister (`list_tools`)
 **Purpose**: Display all available tools with simple descriptions
@@ -86,17 +93,36 @@ ui-test-gen-mcp/
 
 ### **Playwright Configuration Management**
 - Automatically validates `playwright.config.ts` files
-- Ensures `snapshotDir` is set to `"./screenshots"`
+- Ensures `snapshotDir` is set to `"./__screenshots__"`
 - Updates configuration if missing or incorrect (only modifies snapshotDir)
 
+### **Environment Switching Capabilities** 🆕
+- **Single Test File**: One test file per component handles all environments
+- **Dynamic Environment Config**: Environment configuration generated from CSV data
+- **User-Controlled Switching**: Users manually configure environment selection
+- **Flexible Environment Support**: Supports any environment name (prep, int, qa, prod, staging, etc.)
+
+### **Improved Screenshot Path Structure** 🆕
+- **Clean Paths**: `__screenshots__/fileName/fileName.png` format
+- **No Environment Nesting**: Simple, clean structure without unnecessary directories
+- **Consistent Naming**: Predictable and maintainable screenshot organization
+
+### **Enhanced Tag System** 🆕
+- **Pre-calculated Constants**: Uses `fullPageTags` and `sectionTags` constants
+- **No Function Calls**: Eliminates `getTagsForSelector()` function calls
+- **Proper Playwright Syntax**: Implements tags using `test('Name', { tag: tags }, async ({ page }) => {})`
+- **Automatic Tag Selection**: Body selector gets `fullPageTags`, others get `sectionTags`
+
 ### **Organized Project Structure**
-- `./tests/ui/` - Generated test files
+- `./tests/ui/` - Generated test files (single file per component)
 - `./utils/ui/` - Utility functions organized by type:
   - `selectors.ts` - Reusable selectors and constants
   - `helpers.ts` - Common helper functions
   - `test-actions.ts` - Generated test action functions
   - `page-objects.ts` - Page object model patterns
   - `validation.ts` - Validation and error handling
+  - `env-config.ts` - **NEW** Environment configuration utilities
+  - `test-tags.ts` - **NEW** Tag management utilities
 - `./data/ui/` - Test data and configuration
 - `./pages/ui/` - Page object classes and locators
 
@@ -112,30 +138,34 @@ The server uses a mandatory core test script template that ensures consistency:
 - Proper screenshot handling with `toMatchSnapshot`
 - Element hiding for clean visual testing
 - Scroll handling for element visibility
+- Proper tag implementation
 
 ## 📋 Workflow
 
 ### Phase 1: Configuration Validation
 1. Locate `playwright.config.ts` files in the project
-2. Verify `snapshotDir` is set to `"./screenshots"`
+2. Verify `snapshotDir` is set to `"./__screenshots__"`
 3. Update configuration if necessary
 
 ### Phase 2: Test File Generation
 1. Parse CSV data for test specifications
-2. Create test files in `./tests/ui/` folder
-3. Apply the core test script template
-4. Replace template variables with CSV data
+2. Detect environment column and use appropriate template
+3. Create **single test file** per component in `./tests/ui/` folder
+4. Apply the core test script template with environment switching
+5. Replace template variables with CSV data
 
 ### Phase 3: Project Structure Creation
 1. Create organized folder structure
 2. Generate utility files in appropriate locations
 3. Create data and page object files
+4. Generate environment configuration files
 
 ### Phase 4: Code Refactoring
 1. Extract common utilities to grouped files
 2. Organize code for maintainability
 3. Follow project's existing coding style
 4. Ensure proper separation of concerns
+5. Implement proper tag system
 
 ## 🚀 Setup & Usage
 
@@ -248,10 +278,19 @@ node test-connection.js
 
 ## 📝 CSV Format Example
 
+### Basic Format
 ```csv
 file_name,test_url,test_description,test_selector,test_hide,test_action
 homepage,https://example.com,Homepage hero section,.hero-section,.ad-banner,click
 product,https://example.com/product,Product image,.product-image,.cookie-banner,screenshot
+```
+
+### **NEW** - With Environment Support
+```csv
+file_name,test_url,test_description,test_selector,test_hide,test_action,test_env
+pdp,https://prep.example.com/product,PDP Full Page,body,.banner,.modal,prep
+pdp,https://int.example.com/product,PDP Full Page,body,.banner,.modal,int
+pdp,https://qa.example.com/product,PDP Full Page,body,.banner,.modal,qa
 ```
 
 ## 💡 Usage Examples
@@ -268,18 +307,47 @@ Once configured, you can use the MCP server to:
 
 ### Example CSV Input
 ```csv
-file_name,test_url,test_description,test_selector,test_hide,test_action
-landing,https://myapp.com,Landing page header,.header-section,.notification-banner,screenshot
-dashboard,https://myapp.com/dashboard,Dashboard sidebar,.sidebar-nav,.ads-container,click
+file_name,test_url,test_description,test_selector,test_hide,test_action,test_env
+landing,https://myapp.com,Landing page header,.header-section,.notification-banner,screenshot,prep
+dashboard,https://myapp.com/dashboard,Dashboard sidebar,.sidebar-nav,.ads-container,click,int
 ```
 
 ### Generated Output
 The server will create:
-- `./tests/ui/landing.spec.ts` - Test file for landing page
-- `./tests/ui/dashboard.spec.ts` - Test file for dashboard
-- `./utils/ui/` - Organized utility files
+- `./tests/ui/landing.spec.ts` - **Single test file** for landing page (handles all environments)
+- `./tests/ui/dashboard.spec.ts` - **Single test file** for dashboard (handles all environments)
+- `./utils/ui/` - Organized utility files including environment config
 - `./data/ui/` - Test data files
 - `./pages/ui/` - Page object classes
+
+### **NEW** - Environment Switching Example
+```typescript
+// Generated test file with environment switching
+test.describe('Landing - Visual testing', () => {
+  test('Landing page header', {
+    tag: sectionTags  // Pre-calculated constant, no function call
+  }, async ({ page }) => {
+    const testData = landingTestData.find(t => 
+      t.test_description === 'Landing page header' && 
+      t.test_env === getCurrentEnv()
+    );
+    
+    if (!testData) throw new Error('Test data not found');
+    
+    await page.goto(testData.test_url);
+    
+    // Hide elements specific to this component
+    await hideElements(page, testData.test_hide);
+    
+    const locator = page.locator(testData.test_selector);
+    await locator.scrollIntoViewIfNeeded();
+    
+    // Clean screenshot path structure
+    const fileName = generateFileName(testData.test_description);
+    expect(await locator.screenshot()).toMatchSnapshot(`${fileName}/${fileName}.png`);
+  });
+});
+```
 
 ## ⚠️ Important Notes
 
@@ -287,6 +355,17 @@ The server will create:
 - The core test script template is **mandatory and non-negotiable**
 - Never deviate from the template structure
 - Always use exact import statements and test patterns
+
+### **Environment Switching** 🆕
+- **Single Test File**: One test file per component handles all environments
+- **User Control**: Users manually configure environment selection
+- **No Automatic Switching**: `switchEnvironment()` calls are not automatically generated
+- **Flexible Implementation**: Users implement `getCurrentEnv()` based on their configuration
+
+### **Tag System** 🆕
+- **No Function Calls**: Tags use pre-calculated constants (`fullPageTags`, `sectionTags`)
+- **Proper Syntax**: Implements Playwright tag syntax correctly
+- **Automatic Selection**: Body selector gets `fullPageTags`, others get `sectionTags`
 
 ### **Component Safety**
 - Each CSV component maintains its own `test_hide` selectors
@@ -307,6 +386,9 @@ The server will create:
 - **Maintainable Code**: Clean, organized, and well-structured test files
 - **Project Integration**: Follows existing project coding styles and conventions
 - **Easy Installation**: Available as npm package for quick setup
+- **Environment Support**: **NEW** - Single test file handles multiple environments
+- **Clean Screenshots**: **NEW** - Simple, organized screenshot paths
+- **Proper Tags**: **NEW** - No function calls, uses pre-calculated constants
 
 ## 🐛 Troubleshooting
 
@@ -315,6 +397,7 @@ The server will create:
 2. **Template Errors**: Verify CSV data follows required format
 3. **Configuration Issues**: Check that `playwright.config.ts` exists and is editable
 4. **Folder Creation Errors**: Ensure write permissions in the project directory
+5. **Environment Issues**: **NEW** - Verify `test_env` column is present in CSV for environment switching
 
 ### Debug Steps
 1. Verify installation: `npm list ui-test-gen-mcp`
@@ -322,6 +405,7 @@ The server will create:
 3. Check console logs for error messages
 4. Verify CSV data format and content
 5. Ensure project structure is properly set up
+6. Check for environment column in CSV data
 
 ## 📚 Additional Resources
 
@@ -343,6 +427,13 @@ ISC License - see package.json for details
 
 ---
 
-**Note**: This MCP server is designed for generating Playwright visual testing scripts. Ensure you have Playwright properly configured in your project before using the generated tests.
+**Note**: This MCP server is designed for generating Playwright visual testing scripts with environment switching capabilities. Ensure you have Playwright properly configured in your project before using the generated tests.
 
 **Package**: Available on [npm](https://www.npmjs.com/package/ui-test-gen-mcp) as `ui-test-gen-mcp`
+
+**Recent Updates**: 
+- ✅ Environment switching capabilities
+- ✅ Improved screenshot path structure  
+- ✅ Enhanced tag system (no function calls)
+- ✅ Single test file per component
+- ✅ User-controlled environment configuration
