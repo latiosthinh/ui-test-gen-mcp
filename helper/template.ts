@@ -140,7 +140,7 @@ test.describe(\`\${test_description} - \${currentEnv.toUpperCase()} Environment\
 `;
 
 // Base UI Page template for fullPageTags tests
-export const BASE_UI_PAGE_TEMPLATE = `import { BrowserContext, Page } from "@playwright/test";
+export const BASE_UI_PAGE_TEMPLATE = `import { BrowserContext, Locator, Page } from "@playwright/test";
 
 export class BaseUiPage {
 	readonly page: Page;
@@ -167,5 +167,13 @@ export class BaseUiPage {
 			});
 		});
 		await this.page.waitForTimeout(2000);
+	}
+
+	// Generic method for any test data
+	getLocator(testSelector: string, testSelectorText: string): Locator {
+		if (testSelectorText) {
+			return this.page.locator(testSelector).filter({ hasText: new RegExp(testSelectorText, 'i') });
+		}
+		return this.page.locator(testSelector);
 	}
 }`;
