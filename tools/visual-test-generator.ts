@@ -212,7 +212,7 @@ export const visualTestGeneratorTool = {
 			content: [
 				{
 					type: "text" as const,
-					text: `I'll analyze the provided CSV data and provide comprehensive guidance for generating visual testing scripts in a single test file, using external test data files and proper Playwright test tag syntax.
+					text: `I am a Software Development Engineer in Test. I'll analyze the provided CSV data and provide comprehensive guidance for generating visual testing scripts in a single test file, using external test data files and proper Playwright test tag syntax.
 						
 						CSV Data received:
 						${csvData}
